@@ -37,11 +37,11 @@
 <section class="section library-tools">
     <div class="container">
         <div class="library-filters">
-            <a href="/library?subject=all" class="filter-btn active">全部</a>
-            <a href="/library?subject=数学" class="filter-btn ">数学</a>
-            <a href="/library?subject=物理" class="filter-btn ">物理</a>
+            <a href="?subject=all" class="filter-btn active">全部</a>
+            <a href="?subject=数学" class="filter-btn ">数学</a>
+            <a href="?subject=物理" class="filter-btn ">物理</a>
         </div>
-        <form class="search-box" method="GET" action="/library">
+        <form class="search-box" method="GET" action="/library.html">
             
             <input type="text" name="search" placeholder="搜索课件..." value="" class="search-input">
             <button type="submit" class="search-btn">搜索</button>
@@ -211,8 +211,8 @@
                 <div>
                     <h4>学科覆盖</h4>
                     <ul>
-                        <li><a href="/library?subject=数学">初中数学</a></li>
-                        <li><a href="/library?subject=物理">初中物理</a></li>
+                        <li><a href="?subject=数学">初中数学</a></li>
+                        <li><a href="?subject=物理">初中物理</a></li>
                     </ul>
                 </div>
                 <div>
@@ -240,23 +240,30 @@
     var filterBtns = document.querySelectorAll('.filter-btn');
     var searchInput = document.querySelector('.search-input');
     var searchForm = document.querySelector('.search-box');
-    var clearBtn = emptyState && emptyState.querySelector('.btn');
 
     var allData = [{"id":"quadratic-function","subject":"数学","title":"二次函数图像探索","description":"交互式二次函数图像演示，支持实时调整a、b、c参数，动态观察抛物线变化，显示顶点、对称轴、交点等关键特征。","tags":["二次函数","抛物线","函数图像","代数"]},{"id":"trig-unit-circle","subject":"数学","title":"三角函数单位圆","description":"通过单位圆动态演示正弦、余弦、正切函数的定义和变化规律，角度可拖拽调整，实时显示函数值。","tags":["三角函数","单位圆","正弦","余弦","几何"]},{"id":"pythagorean","subject":"数学","title":"勾股定理可视化证明","description":"直观展示勾股定理的几何意义，通过面积法验证 a² + b² = c²，支持交互式操作。","tags":["勾股定理","几何","面积","证明"]},{"id":"lens-imaging","subject":"物理","title":"凸透镜成像规律","description":"模拟凸透镜成像实验，物距可拖拽调整，实时显示成像位置、大小、倒正和虚实变化，完美覆盖u>2f、u=2f、f<u<2f等所有成像规律。","tags":["凸透镜","成像","光学","物理实验"]},{"id":"free-fall","subject":"物理","title":"自由落体与抛体运动","description":"模拟自由落体、竖直上抛和平抛运动，实时显示位移、速度、加速度，支持调整初始参数。","tags":["自由落体","抛体运动","力学","运动学"]},{"id":"probability","subject":"数学","title":"概率统计模拟器","description":"通过抛硬币、掷骰子等实验直观理解概率与统计，支持大量重复实验，实时显示频率分布和统计图表。","tags":["概率","统计","实验","数据分析"]}];
 
+    function getSubjectFromHref(el) {
+        var m = el.getAttribute('href').match(/subject=([^&]*)/);
+        return m ? decodeURIComponent(m[1]) : 'all';
+    }
+
     function render() {
         var subj = new URLSearchParams(location.search).get('subject') || 'all';
-        var q = new URLSearchParams(location.search).get('search') || '';
+        var q = (new URLSearchParams(location.search).get('search') || '').toLowerCase();
         var filtered = allData;
         if (subj !== 'all') filtered = filtered.filter(function(c) { return c.subject === subj; });
-        if (q) filtered = filtered.filter(function(c) { return c.title.indexOf(q) !== -1 || c.description.indexOf(q) !== -1 || c.tags.some(function(t) { return t.indexOf(q) !== -1; }); });
-
-        filterBtns.forEach(function(b) {
-            var s = new URLSearchParams(b.getAttribute('href').split('?')[1]).get('subject') || 'all';
-            b.classList.toggle('active', s === subj);
+        if (q) filtered = filtered.filter(function(c) {
+            return c.title.toLowerCase().indexOf(q) !== -1
+                || c.description.toLowerCase().indexOf(q) !== -1
+                || c.tags.some(function(t) { return t.toLowerCase().indexOf(q) !== -1; });
         });
 
-        if (searchInput) searchInput.value = q;
+        filterBtns.forEach(function(b) {
+            b.classList.toggle('active', getSubjectFromHref(b) === subj);
+        });
+
+        if (searchInput) searchInput.value = new URLSearchParams(location.search).get('search') || '';
 
         var ids = {};
         filtered.forEach(function(c) { ids[c.id] = true; });
@@ -268,17 +275,29 @@
         if (emptyState) {
             container.style.display = filtered.length ? '' : 'none';
             emptyState.style.display = filtered.length ? 'none' : '';
+        } else if (filtered.length === 0 && container) {
+            var none = document.createElement('div');
+            none.className = 'empty-state';
+            none.innerHTML = '<div class="empty-icon">📭</div><h3>暂无课件</h3><p>没有找到匹配的课件，试试其他关键词</p><a href="?" class="btn btn-secondary">清除筛选</a>';
+            none.querySelector('a').addEventListener('click', function(e) {
+                e.preventDefault();
+                history.pushState({}, '', location.pathname);
+                render();
+            });
+            container.parentNode.insertBefore(none, container.nextSibling);
+            container.style.display = 'none';
+            emptyState = none;
         }
     }
 
     filterBtns.forEach(function(b) {
         b.addEventListener('click', function(e) {
             e.preventDefault();
-            var u = new URL(b.href);
-            var params = new URLSearchParams(u.search);
-            var newUrl = location.pathname;
-            if (params.get('subject') && params.get('subject') !== 'all') newUrl += '?subject=' + params.get('subject');
-            history.pushState({}, '', newUrl);
+            var s = getSubjectFromHref(b);
+            var params = new URLSearchParams(location.search);
+            if (s !== 'all') params.set('subject', s); else params.delete('subject');
+            var qs = params.toString();
+            history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
             render();
         });
     });
@@ -291,14 +310,6 @@
             if (v) params.set('search', v); else params.delete('search');
             var qs = params.toString();
             history.pushState({}, '', location.pathname + (qs ? '?' + qs : ''));
-            render();
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            history.pushState({}, '', location.pathname);
             render();
         });
     }

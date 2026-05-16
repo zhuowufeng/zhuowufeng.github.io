@@ -92,38 +92,13 @@
 <script>
 document.getElementById('generateForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const btn = document.getElementById('generateBtn');
-    const result = document.getElementById('generateResult');
-    const formData = {
-        prompt: document.getElementById('prompt').value,
-        subject: document.getElementById('subject').value,
-        grade: document.getElementById('grade').value
-    };
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳ 正在生成...</span>';
-    try {
-        const res = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
-        const data = await res.json();
-        if (data.success) {
-            result.style.display = 'block';
-            result.className = 'generate-result success';
-            result.innerHTML = '<div class="result-icon">✅</div><h3>请求已提交</h3><p>' + data.message + '</p>';
-            document.getElementById('generateForm').reset();
-        } else {
-            throw new Error(data.error || '生成失败');
-        }
-    } catch (err) {
-        result.style.display = 'block';
-        result.className = 'generate-result error';
-        result.innerHTML = '<div class="result-icon">❌</div><h3>提交失败</h3><p>' + err.message + '</p>';
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>✦ 开始生成</span>';
-    }
+    var btn = document.getElementById('generateBtn');
+    var result = document.getElementById('generateResult');
+    result.style.display = 'block';
+    result.className = 'generate-result error';
+    result.innerHTML = '<div class="result-icon">🔌</div><h3>需要后端服务支持</h3><p>AI 课件生成功能需要运行 Express 后端服务（<code>node server.js</code>）才能使用。当前为静态演示版本，您可以通过以下方式体验完整功能：</p><ul style="text-align:left;margin-top:12px"><li>下载已有课件：前往 <a href="library.html">课件库</a> 浏览和下载现成的交互课件</li><li>本地运行：在项目目录执行 <code>node server.js</code> 启动完整版服务</li></ul>';
+    btn.disabled = false;
+    btn.innerHTML = '<span>✦ 开始生成</span>';
 });
 </script>
 
